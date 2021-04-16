@@ -1,0 +1,62 @@
+#!/bin/bash
+# valid float -- 测试数字是否为有效的浮点数
+# 使用"."记法可以将另外一个脚本包含到当前脚本中
+
+. validint
+
+validfloat()
+{
+	fvalue="$1"
+	
+	# 检查输入的数字是否有小数点
+	if [ ! -z $(echo $fvalue | sed 's/[^.]//g')} ]; then
+		# 提取小数点之前的部分	
+		decimalPart="$(echo $fvalue | cut -d. -f1)"
+		# 提取小数点之后的部分
+		fractionalPart="${fvalue#*\.}"
+
+		# 测试整数部分
+
+		if [ ! -z $decimalPart ]; then
+			if ! validint "$decimalPart" "" "" ; then
+				return 1
+			fi
+		fi
+		
+		# 测试小数部分
+		
+		# 小数点之后不能有负号 (例如33.-11就不正确)，因此先来测试负号
+		if [ "${fractionalPart%${fractionalPart#?}}" = "-" ]; then
+			echo "Invalid floating-point number: '-' not allowed \
+				after decimal point." >&2
+			return 1	
+		fi
+
+		if [ "$fractionalPart" != "" ]; then
+			# 如果小数部分不是有效的整数...	
+			if ! validint "$fractionalPart" "0" ""; then
+				return 1
+			fi
+		fi
+
+	else
+		# 如果整个值只是一个“-”，那也不行
+		if [ "$fvalue" = "-" ]; then
+			echo "Invalid floating-point format." >&2
+			return 1
+		fi
+
+		# 最后，检查剩下的部分是否为有效的整数
+		if ! validint "$fvalue" "" "" ; then
+			return 1
+		fi
+	fi
+
+	return 0
+}
+
+if validfloat $1; then
+	echo "$1 is a valid floating-point value."
+fi
+
+exit 0
